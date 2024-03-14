@@ -1,0 +1,461 @@
+openapi: 3.0.3
+info:
+  title: Google Civic Information API
+  description: Provides polling places, early vote locations, contest data, election officials, and government representatives for U.S. residential addresses.
+  version: v2
+servers:
+  - url: https://www.googleapis.com/civicinfo/v2
+paths:
+  /elections?key=AIzaSyCKQBLe0jBBtnuRi1OPklX6vWC1uHTL788:
+    get:
+      summary: List of available elections to query.
+      operationId: electionsQuery
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+          description: The search query. Queries can cover any parts of an OCD ID or a human readable division name. All words given in the query are treated as required patterns. In addition to that, most query operators of the Apache Lucene library are supported. See http://lucene.apache.org/core/2_9_4/queryparsersyntax.html
+      responses:
+        '200':
+          description: A successful response, returning available elections.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElectionsQueryResponse'
+  /representatives?key=AIzaSyCKQBLe0jBBtnuRi1OPklX6vWC1uHTL788:
+    get:
+      summary: Fetches political representatives based on an address.
+      operationId: representativeInfoByAddress
+      parameters:
+        - name: address
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The address for which to fetch representatives.
+        - name: includeOffices
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: true
+          description: Whether to return information about offices and officials. If false, only the top-level division information will be returned.
+      responses:
+        '200':
+          description: Successful response with representative information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepresentativeInfoResponse'
+        '400':
+          description: Bad request, possibly due to missing or invalid parameters.
+  /voterinfo?key=AIzaSyCKQBLe0jBBtnuRi1OPklX6vWC1uHTL788:
+    get:
+      summary: Looks up information relevant to a voter based on the voter's registered address.
+      operationId: voterInfoQuery
+      parameters:
+        - name: address
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: electionId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: officialOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: productionDataOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: returnAllAvailableData
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: A successful response, returning relevant information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoterInfoResponse'
+components:
+  schemas:
+    ElectionsQueryResponse:
+      type: object
+      properties:
+        elections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Election'
+    Election:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        electionDay:
+          type: string
+        ocdDivisionId:
+          type: string
+    RepresentativeInfoResponse:
+      type: object
+      properties:
+        divisions:
+          type: object
+          description: A map of political geographic divisions that contain the requested address, keyed by the unique Open Civic Data identifier for this division.
+          additionalProperties:
+            $ref: '#/components/schemas/Division'
+        offices:
+          type: array
+          description: Elected offices referenced by the divisions listed above. Will only be present if includeOffices was true in the request.
+          items:
+            $ref: '#/components/schemas/Office'
+        officials:
+          type: array
+          description: Officials holding the offices listed above. Will only be present if includeOffices was true in the request.
+          items:
+            $ref: '#/components/schemas/Official'
+    Division:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the division.
+        officeIndices:
+          type: array
+          items:
+            type: integer
+          description: Indices in the offices array that are elected from this division.
+    Office:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the office.
+        divisionId:
+          type: string
+          description: The OCD ID of the division with which this office is associated.
+        officialIndices:
+          type: array
+          items:
+            type: integer
+          description: Indices in the officials array of people who presently hold this office.
+    Official:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the official.
+        party:
+          type: string
+          description: The party affiliation of the official.
+    VoterInfoResponse:
+      type: object
+      properties:
+        contests:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contest'
+        dropOffLocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/PollingLocation'
+        earlyVoteSites:
+          type: array
+          items:
+            $ref: '#/components/schemas/PollingLocation'
+        election:
+          items:
+            $ref: '#/components/schemas/Election'
+        kind:
+          type: string
+        mailOnly:
+          type: boolean
+        normalizedInput:
+          items:
+            $ref: '#/components/schemas/SimpleAddressType'
+        otherElections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Election'
+        pollingLocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/PollingLocation'
+        precinctId:
+          type: string
+        precincts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Precinct'
+        state:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdministrationRegion'
+    Contest:
+      type: object
+      properties:
+        ballotPlacement:
+          type: string
+        ballotTitle:
+          type: string
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidate'
+        district:
+          $ref: '#/components/schemas/ElectoralDistrict'
+        electorateSpecifications:
+          type: string
+        level:
+          type: array
+          items:
+            type: string
+        numberElected:
+          type: string
+        numberVotingFor:
+          type: string
+        office:
+          type: string
+        primaryParties:
+          type: array
+          items:
+            type: string
+        referendumBallotResponses:
+          type: array
+          items:
+            type: string
+        referendumBrief:
+          type: string
+        referendumConStatement:
+          type: string
+        referendumEffectOfAbstain:
+          type: string
+        referendumPassageThreshold:
+          type: string
+        referendumProStatement:
+          type: string
+        referendumSubtitle:
+          type: string
+        referendumText:
+          type: string
+        referendumTitle:
+          type: string
+        referendumUrl:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+        special:
+          type: string
+        type:
+          type: string
+    PollingLocation:
+      type: object
+      properties:
+        address:
+          items:
+            $ref: '#/components/schemas/SimpleAddressType'
+          endDate:
+            type: string
+          latitude:
+            type: number
+          longitude:
+            type: number
+          name:
+            type: string
+          notes:
+            type: string
+          pollingHours:
+            type: string
+          sources:
+            type: array
+            items:
+              $ref: '#/components/schemas/Source'
+          startDate:
+            type: string
+          voterServices:
+            type: string
+    SimpleAddressType:
+      type: object
+      properties:
+        city:
+          type: string
+        line1:
+          type: string
+        line2:
+          type: string
+        line3:
+          type: string
+        locationName:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+    Precinct:
+      type: object
+      properties:
+        administrationRegionId:
+          type: string
+        contestId:
+          type: array
+          items:
+            type: string
+        datasetId:
+          type: string
+        earlyVoteSiteId:
+          type: array
+          items:
+            type: string
+        electoralDistrictId:
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+        mailOnly:
+          type: boolean
+        name:
+          type: string
+        number:
+          type: string
+        ocdId:
+          type: array
+          items: 
+            type: string
+        pollingLocationId:
+          type: array
+          items:
+            type: string
+        spatialBoundaryId:
+          type: array
+          items:
+            type: string
+        splitName:
+          type: string
+        ward:
+          type: string
+    AdministrationRegion:
+      type: object
+      properties:
+        electionAdministrationBody:
+          $ref: '#/components/schemas/AdministrativeBody'
+        local_jurisdiction:
+          $ref: '#/components/schemas/AdministrationRegion'
+        name:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: '$/components/schemas/Source'
+    AdministrativeBody:
+      type: object
+      properties:
+        absenteeVotingInfoUrl:
+          type: string
+        ballotInfoUrl:
+          type: string
+        correspondingAddress:
+          type: string
+        electionInfoUrl:
+          type: string
+        electionNoticeText:
+          type: string
+        electionNoticeUrl:
+          type: string
+        electionOfficials:
+          type: array
+          items:
+            $ref: '#/components/schemas/ElectionOfficial'
+        electionRegistrationConfirmationUrl:
+          type: string
+        electionRegistrationUrl:
+          type: string
+        electionRulesUrl:
+          type: string
+        hoursOfOperation:
+          type: string
+        name:
+          type: string
+        physicalAddress:
+          $ref: '#/components/schemas/SimpleAddressType'
+        voter_services:
+          type: array
+          items:
+            type: string
+        voterLocationFinderUrl:
+          type: string
+    ElectionOfficial:
+      type: object
+      properties:
+        emailAddress:
+          type: string
+        faxNumber:
+          type: string
+        name:
+          type: string
+        officePhoneNumber:
+          type: string
+        title:
+          type: string
+    Source:
+      type: object
+      properties:
+        name:
+          type: string
+        official:
+          type: boolean
+    Candidate:
+      type: object
+      properties:
+        candidateUrl:
+          type: string
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Channel'
+        email:
+          type: string
+        name:
+          type: string
+        orderOnBallot:
+          type: string
+        party:
+          type: string
+        phone:
+          type: string
+        photoUrl:
+          type: string
+    ElectoralDistrict:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        scope:
+          type: string
+    Channel:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
